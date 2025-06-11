@@ -1,0 +1,3 @@
+django admin login page:
+Username = lenovo
+password = 123
