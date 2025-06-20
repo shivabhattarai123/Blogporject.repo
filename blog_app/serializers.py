@@ -1,6 +1,9 @@
 from rest_framework import serializers
-from .models import Category, Post, Comment
 from django.contrib.auth.models import User
+from .models import Category
+from .models import *
+from django.contrib.auth import get_user_model
+User = get_user_model()   # Get the custom user model if you’re using one
 
 
 # User Serializer
@@ -13,17 +16,23 @@ class UserSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name','field']
 
-    def validate_name(self, value):
-        if Category.objects.filter(name=value).exists():
-            raise serializers.ValidationError("Category already exists.")
-        return value
+    def save(self, **kwargs):
+        validated_data = self.validated_data
+        name = validated_data.get('name')
+        if Category.objects.filter(name=name).exists():
+            raise serializers.ValidationError({
+                'detail': 'Category already exists.'
+            })
 
+        category = Category(**validated_data)
+        category.save()
+        return category
 
 # Post Serializer
 class PostSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)   # Show author details but don't allow changing it directly
     category = serializers.StringRelatedField(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
@@ -38,7 +47,6 @@ class PostSerializer(serializers.ModelSerializer):
             'title',
             'content',
             'created_at',
-            'updated_at',
             'author',
             'category',
             'category_id',
@@ -59,7 +67,7 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = [
             'id',
-            'body',
+            'content',
             'created_at',
             'author',
             'post',

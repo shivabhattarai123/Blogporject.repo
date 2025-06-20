@@ -1,3 +1,9 @@
 django admin login page:
-Username = lenovo
+Username = admin
+password = admin
+
+
+
+new login page:
+username = shiva
 password = 123
