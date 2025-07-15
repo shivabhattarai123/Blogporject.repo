@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from .models import Category
 from .models import *
 from django.contrib.auth import get_user_model
@@ -31,15 +31,26 @@ class CategorySerializer(serializers.ModelSerializer):
         return category
 
 # Post Serializer
+# class PostSerializer(serializers.ModelSerializer):
+#     author = UserSerializer()   # Show author details but don't allow changing it directly
+#     category = serializers.StringRelatedField(read_only=True)
+#     category_id = serializers.PrimaryKeyRelatedField(
+#         queryset=Category.objects.all(),
+#         source='category',
+#         write_only=True
+#     )
+
 class PostSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)   # Show author details but don't allow changing it directly
+    author = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='username'
+    )
     category = serializers.StringRelatedField(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         source='category',
         write_only=True
     )
-
     class Meta:
         model = Post
         fields = [
@@ -52,24 +63,21 @@ class PostSerializer(serializers.ModelSerializer):
             'category_id',
         ]
 
-
 # Comment Serializer
 class CommentSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
     post = serializers.StringRelatedField(read_only=True)
     post_id = serializers.PrimaryKeyRelatedField(
         queryset=Post.objects.all(),
         source='post',
         write_only=True
     )
-
     class Meta:
         model = Comment
         fields = [
             'id',
             'content',
             'created_at',
-            'author',
             'post',
             'post_id',
+            # 'Category_id',
         ]

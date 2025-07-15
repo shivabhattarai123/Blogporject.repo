@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import status
 from .models import *
 from django.shortcuts import get_object_or_404
@@ -81,6 +82,12 @@ class CategoryAPiView(ModelViewSet):
     filterset_class = CategoryFilter
     search_fields = ('name',)
     permission_classes = [IsAuthenticatedOrReadonly] 
+    
+    def perform_create(self, serializer):
+        if self.request.user.userprofile.role != 'author':
+            raise PermissionDenied("Only authors can create categories.")
+        serializer.save()
+        
 class PostViewset(ModelViewSet):
     queryset = Post.objects.select_related().all()
     serializer_class = PostSerializer
@@ -88,19 +95,32 @@ class PostViewset(ModelViewSet):
     filter_backends = (filters.SearchFilter,filter.DjangoFilterBackend)
     filterset_class = PostFilter
     search_fields = ('name',)
-    permission_classes = [IsAuthenticatedOrReadonly] 
+    permission_classes = [IsAuthenticated] 
+    
+    def perform_create(self, serializer):
+        if self.request.user.userprofile.role != 'author':
+            raise PermissionDenied("Only authors can create posts.")
+        serializer.save(author=self.request.user)
 
+    def perform_update(self, serializer):
+        if self.request.user.userprofile.role != 'author':
+            raise PermissionDenied("Only authors can update posts.")
+        serializer.save()
+    def perform_destroy(self, instance):
+        if self.request.user.userprofile.role != 'author':
+            raise PermissionDenied("Only authors can delete posts.")
+        instance.delete()
     
 class CommentViewset(ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    # permission_classes = [IsAuthenticatedOrReadonly]  
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination  
     
-
     def perform_create(self, serializer):
-        profile, created = UserProfile.objects.get_or_create(
-            user=self.request.user,
-            defaults={'role': 'reader'} 
-        )
+        if self.request.user.userprofile.role != 'reader':
+            raise PermissionDenied("Only readers can create comments.")
+        serializer.save()
 
-        serializer.save(author=self.request.user)
+    def perform_destroy(self, instance):
+        instance.delete()

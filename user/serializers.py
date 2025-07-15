@@ -1,42 +1,21 @@
-# from rest_framework import serializers
-# from django.contrib.auth.models import User
-# from .models import UserProfile
-
-# class UserProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = UserProfile
-#         fields = ['role']
-
-# class UserSerializer(serializers.ModelSerializer):
-#     profile = UserProfileSerializer(read_only=True)
-
-#     class Meta:
-#         model = User
-#         fields = ['id', 'username', 'email', 'profile']
-
-
 from rest_framework import serializers
-from .models import User, UserProfile
+from django.contrib.auth import get_user_model
+from .models import UserProfile
+User = get_user_model()
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['role']
+        fields = ['id', 'role', 'bio']  # Add bio or other editable fields
+        read_only_fields = ['role']  # Prevent readers from changing their role
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(read_only=True)
+    profile = UserProfileSerializer(read_only=True)  # Include the related UserProfile using the nested serializer, read-only
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'phone_number', 'password', 'profile']
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True}   # Ensures password is only used when writing (POST/PUT), not shown in responses
         }
 
-    def create(self, validated_data):
-        # Create the user securely
-        password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
